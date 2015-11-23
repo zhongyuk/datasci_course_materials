@@ -1,0 +1,17 @@
+SELECT max(abs_similarity) FROM
+
+(SELECT docid, sum(score) AS abs_similarity FROM
+
+(SELECT docid, term, count * q_count AS score FROM
+
+(SELECT * FROM frequency),
+
+(SELECT 'q' AS q_docid, 'washington' AS q_term, 1 AS q_count
+UNION
+SELECT 'q' AS q_docid, 'taxes' AS q_term, 1 AS q_count
+UNION
+SELECT 'q' AS q_docid, 'treasury' AS q_term, 1 AS q_count)
+
+WHERE term = q_term)
+
+GROUP BY docid);

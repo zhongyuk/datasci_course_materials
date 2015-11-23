@@ -1,0 +1,11 @@
+SELECT sum(doc1_count * doc2_count) FROM
+
+(SELECT term AS doc1_term,
+count AS doc1_count FROM frequency
+WHERE docid = "10080_txt_crude"),
+
+(SELECT term AS doc2_term,
+count AS doc2_count FROM frequency
+WHERE docid = "17035_txt_earn")
+
+WHERE doc1_term = doc2_term;

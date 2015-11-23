@@ -1,0 +1,117 @@
+SQLite Commands for assignment 2
+
+# Load csv data
+$ sqlite3
+> CREATE TABLE frequency(docid TEXT, term TEXT, count INTEGER);
+> .mode csv
+> .import Frequency.csv frequency
+# Drop an existing table
+> DROP TABLE frequency #table name
+
+# Load database, show the tables inside the database
+$ sqlite3 <database name>
+> .tables
+
+# (a) SELECT: Write a query which is equivalent to following relational algebra:
+# σdocid=10398_txt_earn(frequency)
+> SELECT count(*) FROM frequency WHERE docid = "10398_txt_earn";
+# output is 138
+
+# (b) SELECT PROJECT: Write a SQL that is equivalent to the following relational algebra expression
+# πterm(σdocid=10398_txt_earn and count=1(frequency))
+> SELECT Count(*) FROM frequency
+> WHERE docid = "10398_txt_earn" AND count=1;
+
+# (c) UNION: Write a SQL that is equivalent to the following relational algebra expression
+# πterm(σdocid=10398_txt_earn and count=1(frequency)) U πterm(σdocid=925_txt_trade and count=1(frequency))
+> SELECT count(*) FROM (
+> SELECT term FROM frequency
+> WHERE docid = "10398_txt_earn" AND count = 1
+> UNION
+> SELECT term FROM frequency
+> WHERE docid = "925_txt_trade" and count=1);
+# Notice that, UNION removes duplicates, UNION ALL keeps all duplicates
+
+# (d) COUNT: Write a SQL statement to count the number of unique documents containing the word "law" or containing the word "legal" (If a document contains both law and legal, it should only be counted once)
+# 1) Using GROUP BY
+> SELECT count(*) FROM (
+> SELECT docid FROM frequency
+> WHERE term = "law" OR term = "legal"
+> GROUP BY docid);
+# 2) Using DISTINCT
+> SELECT count(*) FROM (
+> SELECT DISTINCT docid FROM (
+> SELECT docid FROM frequency
+> WHERE term = "law" OR term ="legal"));
+
+# (e) BIG DOCUMENTS: Write a SQL statement to find all documents that have more than 300 total terms:
+# * If including duplicate terms
+> SELECT count(*) FROM (
+> SELECT docid, count FROM frequency
+> GROUP BY docid
+> HAVING sum(count)>300);
+# * If excluding duplicate terms
+> SELECT count(docid) FROM
+> (SELECT docid FROM frequency
+> GROUP BY docid HAVING count(term)>300);
+
+# (f) TWO WORDS: Write a SQL statement to count the number of unique documents that contain both the word 'transactions' and the word 'world'.
+# 1) Using DISTINCT
+> SELECT count(*) FROM (
+> SELECT DISTINCT docid FROM frequency
+> WHERE term = "transactions"
+> INTERSECT
+> SELECT DISTINCT docid FROM frequency
+> WHERE term = "world");
+# 2) Using GROUP BY
+> SELECT count(*) FROM (
+> SELECT docid FROM frequency
+> WHERE term = "transactions"
+> GROUP BY docid
+> INTERSECT
+> SELECT docid FROM frequency
+> WHERE term = "world"
+> GROUP BY docid);
+
+# (g) MULTIPLY: Express A X B as a SQL query, both A and B are square matrices
+# Some notes for this task: In a job interview, don't necessarily tell them you recommend implementing linear algebra in a database. You won't be wrong, but the interviewer might not understand databases as well as you now do, and therefore won't understand when and why this is a good idea. Just say you have done some experiments using databases for analytics.
+# Find value for cell (2,3)
+> SELECT sum(a.value*b.value) FROM a, b
+> WHERE a.row_num = 2 AND b.col_num=3
+> AND a.col_num = b.row_num;
+
+# (h) SIMILARITY MATRIX: Write a query to compute the similarity matrix DDT (T stands for transpose)
+# - Result score is absolute similarity score, which hasn't been normalized. If normalization is desired, cosine similarity is useful for this goal.
+# Compute the similarity value of doc "10080_txt_crude" and "17035_txt_earn"
+> SELECT sum(doc1_count * doc2_count) FROM
+> (SELECT term AS doc1_term,
+> count AS doc1_count FROM frequency
+> WHERE docid = "10080_txt_crude"),
+> (SELECT term as doc2_term,
+> count AS doc2_count FROM frequency
+> WHERE docid = "17035_txt_earn")
+> WHERE doc1_term = doc2_term;
+
+# (i) KEYWORD SEARCH: Find the best matching document to the keyword query "washington taxes treasury".
+# * Add search keywords to the corpus
+> SELECT * FROM frequency
+> UNION
+> SELECT 'q' AS docid, 'washington' AS term, 1 AS count
+> UNION
+> SELECT 'q' AS docid, 'taxes' AS term, 1 AS count
+> UNION
+> SELECT 'q' AS docid, 'treasury' AS term, 1 AS count
+# * Compute similarities between every documents with respect to docid='q'
+> SELECT docid, sum(score) AS abs_similarity FROM
+> (SELECT docid, term, count * q_count AS score FROM
+> SELECT * FROM frequency,
+> (SELECT 'q' AS docid, 'washington' AS q_term, 1 AS q_count
+> UNION
+> SELECT 'q' AS docid, 'taxes' AS q_term, 1 AS q_count
+> UNION
+> SELECT 'q' AS docid, 'treasury' as q_term, 1 AS q_count)
+> WHERE term = q_term)
+> GROUP BY docid;
+# * Only output the docid with the highest similarity score, add following line to the beginning:
+> SELECT max(abs_similarity) FROM ......
+

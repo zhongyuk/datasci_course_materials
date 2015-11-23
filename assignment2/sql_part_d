@@ -1,0 +1,4 @@
+SELECT count(*) FROM (
+SELECT docid  FROM frequency
+WHERE term = "law" OR term = "legal"
+GROUP BY docid);
