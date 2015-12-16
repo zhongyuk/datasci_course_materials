@@ -44,6 +44,7 @@ model2 <- randomForest(formula1, data = training)
 predTestPop2 <- predict(model2, testing)
 # ****** Anaswer to question 10
 accuracy2 <- sum(predTestPop2 == testing$pop)/length(predTestPop2)
+importance(model2)
 
 # *** Build and train a SVM model, evaluate model performance *** answers to question 12
 model3 <- svm(formula1, data=training)
